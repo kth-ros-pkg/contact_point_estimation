@@ -1,0 +1,38 @@
+<package>
+ <name>contact_point_estimation</name>
+  <version>0.1.0</version>
+  <description>
+    Contact point & surface normal estimation from force-torque measurements using adaptive control.
+  </description>
+  <license>BSD</license>
+
+  <url type="website">http://wiki.ros.org/contact_point_estimation</url>
+
+  <author email="fevb@kth.se">Francisco Vina</author>
+  <maintainer email="fevb@kth.se">Francisco Vina</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>tf_conversions</build_depend>
+  <build_depend>eigen_conversions</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>tf2_kdl</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>adaptive_control_utils</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>eigen</run_depend>
+  <run_depend>tf_conversions</run_depend>
+  <run_depend>eigen_conversions</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
+  <run_depend>tf2_kdl</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>adaptive_control_utils</run_depend>
+  
+</package>

@@ -1,0 +1,61 @@
+#joint names
+joint_names: [left_arm_1_joint, left_arm_2_joint, left_arm_3_joint, left_arm_4_joint, left_arm_5_joint, left_arm_6_joint, left_arm_7_joint]
+
+arm_select: left
+
+#velocity commands topic to publish
+vel_commands_topic: /left_arm_controller/command_vel
+
+# velocity screw max limits, [m/s] [deg/s]
+v_max: 0.3
+w_max: 60.0
+
+# gains of the contact point estimator
+gamma_r: 7.0
+kappa_r: 0.0
+beta_r: 0.2
+
+# initial contact point (in FT sensor frame)
+initial_r: [0.2, 0.2, 0.1]
+
+# gains of surface normal estimator
+gamma_n: 250000.0
+beta_n: 150.0
+
+# initial surface normal (in base frame)
+initial_n: [0.35, 0.35, 0.866]#[0.0133, -0.0374, 0.9992]
+
+
+# normal force reference
+normal_force_ref: 15.0
+
+# PI gains of force feedback
+alpha_f: 0.0022
+beta_f: 0.00022
+
+# control frequency
+control_frequency: 130
+
+# position gain of the trajectory generator
+alpha_v_d: 0.3
+
+# radius of the circle trajectory [m]
+circle_traj_radius: 0.04
+
+# period of the circle trajectory [s]
+circle_traj_period: 6.0
+
+# speed of line trajectory [m/s]
+line_traj_speed: 0.05
+
+# duration of each segment of the line trajectory [s]
+line_traj_t1: 2.0
+line_traj_t2: 2.0
+
+# reference frame ids
+robot_base_frame_id: /arm_base_link
+robot_ft_frame_id: /left_arm_FT_sensor
+
+#timeout in seconds
+timeout: 5.0
+
