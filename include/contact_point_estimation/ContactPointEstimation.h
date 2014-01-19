@@ -1,14 +1,43 @@
 /*
- * ToolSurfaceCalibControl.h
+ *  ContactPointEstimation.cpp
  *
- *  Created on: Aug 19, 2013
- *      Author: fevb
+ *
+ *  Created on: Jan 14, 2014
+ *  Authors:   Francisco Viña
+ *            fevb <at> kth.se
  */
 
-#ifndef TOOLSURFACECALIBCONTROL_H_
-#define TOOLSURFACECALIBCONTROL_H_
+/* Copyright (c) 2014, Francisco Viña, CVAP, KTH
+   All rights reserved.
 
-#include <dumbo_tool_surface_calib/ToolSurfaceCalibParams.h>
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+      * Neither the name of KTH nor the
+        names of its contributors may be used to endorse or promote products
+        derived from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL KTH BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+
+#ifndef CONTACTPOINTESTIMATION_H_
+#define CONTACTPOINTESTIMATION_H_
+
+#include <contact_point_estimation/ContactPointEstimationParams.h>
 #include <tf/transform_listener.h>
 #include <Eigen/Dense>
 #include <geometry_msgs/WrenchStamped.h>
@@ -20,39 +49,39 @@ using namespace geometry_msgs;
 using namespace tf;
 using namespace std_msgs;
 
-class ToolSurfaceCalibControl
+class ContactPointEstimation
 {
 public:
-	ToolSurfaceCalibControl(ToolSurfaceCalibParams *params);
-	virtual ~ToolSurfaceCalibControl();
+	ContactPointEstimation(ContactPointEstimationParams *params);
+	virtual ~ContactPointEstimation();
 
 	// executes the controller
 	// calculates the velocity screw of FT sensor frame expressed in the base frame)
 	// and updates the estimates of contact point and surface normal
 	// FT_compensated given in FT sensor frame
 	// vel of FT sensor frame expressed in base frame
-	virtual TwistStamped Run(const WrenchStamped &FT_compensated, const Vector3d& vel);
+	virtual TwistStamped getControlSignal(const WrenchStamped &ft_compensated, const Vector3d& vel);
 
 	// resets the controller (integrators and trajectory generators)
-	virtual void Reset();
+	virtual void reset();
 
 
-	virtual PointStamped GetContactPointEstimate();
+	virtual PointStamped getContactPointEstimate();
 
-	virtual Vector3Stamped GetSurfaceNormalEstimate();
+	virtual Vector3Stamped getSurfaceNormalEstimate();
 
-	virtual double GetNormalForceError();
+	virtual double getNormalForceError();
 
 
-	virtual Float64MultiArray GetLr();
+	virtual Float64MultiArray getLr();
 
-	virtual Float64MultiArray GetQr();
+	virtual Float64MultiArray getQr();
 
 
 
 protected:
 
-	ToolSurfaceCalibParams *m_params;
+	ContactPointEstimationParams *m_params;
 
 	// expressed relative to FT sensor frame
 	Vector3d m_contact_point_estimate;
@@ -92,22 +121,22 @@ protected:
 
 
 	// contact point estimate + Lr + Qr expressed in FT sensor frame
-	void UpdateLr(const Vector3d &force);
+	void updateLr(const Vector3d &force);
 
-	void UpdateQr(const Vector3d &force, const Vector3d &torque);
+	void updateQr(const Vector3d &force, const Vector3d &torque);
 
-	virtual void UpdateContactPointEstimate();
+	virtual void updateContactPointEstimate();
 
 
 	// velocity of ft sensor frame expressed in base frame
-	virtual void UpdateLn(const Vector3d &v_ft);
+	virtual void updateLn(const Vector3d &v_ft);
 
 	// surface normal expressed in the base frame
-	virtual void UpdateSurfaceNormalEstimate();
+	virtual void updateSurfaceNormalEstimate();
 
 
 	// PI force feedback velocity , everything expressed in FT sensor frame
-	virtual bool Vf(const Vector3d &force, double &v_f);
+	virtual bool vf(const Vector3d &force, double &v_f);
 
 
 
@@ -115,13 +144,13 @@ protected:
 	// In this case we do an arc trajectory
 	// p_ft : current pos of FT sensor frame expressed in base frame
 	// p_ft_d/v_ft_d: desired pos/vel of FT frame given by trajectory generator
-	virtual Vector3d Vd(const Vector3d &p_ft,
+	virtual Vector3d vd(const Vector3d &p_ft,
 			const Vector3d &p_ft_d, const Vector3d &v_ft_d);
 
 	// desired FT sensor pos and vel
 	// makes an arc trajectory
 	// p_ft_d/v_ft_d: desired pos/vel of FT frame expressed in the base frame
-	virtual void UpdateCircleTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
+	virtual void updateCircleTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
 
 
 
@@ -129,10 +158,10 @@ protected:
 	// makes an arc trajectory
 	// p_ft_d/v_ft_d: desired pos/vel of FT frame expressed in the base frame
 	//todo implement this function
-	virtual void UpdateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
+	virtual void updateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
 
-	// calculate reference velocity of ft sensor frame with respect to the base frame
-	virtual Vector3d Vft(const Vector3d &v_d, double v_f);
+	// calculates reference velocity of ft sensor frame with respect to the base frame
+	virtual Vector3d vft(const Vector3d &v_d, double v_f);
 
 private:
 
@@ -142,4 +171,4 @@ private:
 
 };
 
-#endif /* TOOLSURFACECALIBCONTROL_H_ */
+#endif /* CONTACTPOINTESTIMATION_H_ */
