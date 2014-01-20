@@ -1,5 +1,5 @@
 /*
- *  ContactPointEstimationParams.cpp
+ *  ContactPointEstimationParams.h
  *
  *
  *  Created on: Jan 14, 2014
@@ -34,8 +34,8 @@
 */
 
 
-#ifndef TOOLSURFACECALIBPARAMS_H_
-#define TOOLSURFACECALIBPARAMS_H_
+#ifndef CONTACTPOINTESTIMATIONPARAMS_H_
+#define CONTACTPOINTESTIMATIONPARAMS_H_
 
 #include <eigen3/Eigen/Core>
 using namespace Eigen;
@@ -47,7 +47,7 @@ public:
 	virtual ~ContactPointEstimationParams();
 
 	// gamma_r is the gain of the contact point (r) estimator
-	double GetGammaR() const;
+	double getGammaR() const;
 	void setGammaR(double gamma_r);
 
 	// gamma_r gain of the robustifying term of the contact point estimator

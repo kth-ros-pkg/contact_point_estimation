@@ -1,5 +1,5 @@
 /*
- *  ContactPointEstimation.cpp
+ *  ContactPointEstimation.h
  *
  *
  *  Created on: Jan 14, 2014
@@ -42,6 +42,9 @@
 #include <Eigen/Dense>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <std_msgs/Float64MultiArray.h>
 
 using namespace Eigen;
@@ -59,8 +62,18 @@ public:
 	// calculates the velocity screw of FT sensor frame expressed in the base frame)
 	// and updates the estimates of contact point and surface normal
 	// FT_compensated given in FT sensor frame
-	// vel of FT sensor frame expressed in base frame
-	virtual TwistStamped getControlSignal(const WrenchStamped &ft_compensated, const Vector3d& vel);
+	// vel is the estimated velocity of the 
+	virtual TwistStamped controlSignal(const WrenchStamped &ft_compensated, const Vector3d &vel);
+
+	// updates the estimate of the contact point (expressed in the ft sensor frame)
+	// 
+	// ft_compensated are gravity-compensated force-torque measurements which
+	// should be expressed in the ft sensor frame
+	virtual void updateContactPointEstimate(const WrenchStamped &ft_compensated);
+
+
+	// updates the estimate of the surface normal expressed in the base frame
+	virtual void updateSurfaceNormalEstimate(const Vector3d &vel);
 
 	// resets the controller (integrators and trajectory generators)
 	virtual void reset();
@@ -109,7 +122,6 @@ protected:
 	// initial position of ft sensor with respect to base frame
 	Vector3d m_p_ft_0;
 
-
 	// set points from the trajectory generator.
 	// pos+vel of the FT sensor frame with respect to the base frame
 	Vector3d m_p_ft_d;
@@ -125,18 +137,13 @@ protected:
 
 	void updateQr(const Vector3d &force, const Vector3d &torque);
 
-	virtual void updateContactPointEstimate();
-
 
 	// velocity of ft sensor frame expressed in base frame
 	virtual void updateLn(const Vector3d &v_ft);
 
-	// surface normal expressed in the base frame
-	virtual void updateSurfaceNormalEstimate();
-
 
 	// PI force feedback velocity , everything expressed in FT sensor frame
-	virtual bool vf(const Vector3d &force, double &v_f);
+	virtual bool Vf(const Vector3d &force, double &v_f);
 
 
 
@@ -144,7 +151,7 @@ protected:
 	// In this case we do an arc trajectory
 	// p_ft : current pos of FT sensor frame expressed in base frame
 	// p_ft_d/v_ft_d: desired pos/vel of FT frame given by trajectory generator
-	virtual Vector3d vd(const Vector3d &p_ft,
+	virtual Vector3d Vd(const Vector3d &p_ft,
 			const Vector3d &p_ft_d, const Vector3d &v_ft_d);
 
 	// desired FT sensor pos and vel
@@ -161,7 +168,7 @@ protected:
 	virtual void updateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
 
 	// calculates reference velocity of ft sensor frame with respect to the base frame
-	virtual Vector3d vft(const Vector3d &v_d, double v_f);
+	virtual Vector3d Vft(const Vector3d &v_d, double v_f);
 
 private:
 

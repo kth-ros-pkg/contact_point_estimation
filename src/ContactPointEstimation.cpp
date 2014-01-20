@@ -1,26 +1,55 @@
 /*
- * ToolSurfaceCalibControl.cpp
+ *  ContactPointEstimation.cpp
  *
- *  Created on: Aug 19, 2013
- *      Author: fevb
+ *
+ *  Created on: Jan 14, 2014
+ *  Authors:   Francisco Viña
+ *            fevb <at> kth.se
  */
 
-#include <dumbo_tool_surface_calib/ToolSurfaceCalibControl.h>
-#include <dumbo_adaptive_control_math/adaptive_control_math.h>
+/* Copyright (c) 2014, Francisco Viña, CVAP, KTH
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above copyright
+        notice, this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+      * Neither the name of KTH nor the
+        names of its contributors may be used to endorse or promote products
+        derived from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL KTH BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+
+#include <contact_point_estimation/ContactPointEstimation.h>
+#include <eigen_utils/eigen_utils.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <tf/transform_datatypes.h>
 
 
-ToolSurfaceCalibControl::ToolSurfaceCalibControl(ToolSurfaceCalibParams *params)
+ContactPointEstimation::ContactPointEstimation(ContactPointEstimationParams *params)
 {
 	m_params = params;
 	m_tf_listener = new TransformListener();
 
-	m_contact_point_estimate = -m_params->GetInitialR();
+	m_contact_point_estimate = -m_params->getInitialR();
 	m_r_dot = Vector3d::Zero();
 	m_Lr = Matrix3d::Zero();
 	m_Qr = Vector3d::Zero();
-	m_surface_normal_estimate = m_params->GetInitialN();
+	m_surface_normal_estimate = m_params->getInitialN();
 	m_Ln = Matrix3d::Zero();
 	m_Vf_integral = 0.0;
 	m_v_ft = Vector3d::Zero();
@@ -28,16 +57,17 @@ ToolSurfaceCalibControl::ToolSurfaceCalibControl(ToolSurfaceCalibParams *params)
 
 }
 
-ToolSurfaceCalibControl::~ToolSurfaceCalibControl()
+ContactPointEstimation::~ContactPointEstimation()
 {
 	delete m_tf_listener;
 }
 
-TwistStamped ToolSurfaceCalibControl::Run(
+TwistStamped ContactPointEstimation::controlSignal(
 		const WrenchStamped& FT_compensated,
 		const Vector3d& vel)
 {
-	TwistStamped vel_screw_ft; // vel screw expressed in FT_sensor frame
+  // vel screw expressed in FT_sensor frame
+	TwistStamped vel_screw_ft; 
 
 
 	Vector3d force(FT_compensated.wrench.force.x,
@@ -45,10 +75,10 @@ TwistStamped ToolSurfaceCalibControl::Run(
 			FT_compensated.wrench.force.z);
 
 	Vector3d torque(FT_compensated.wrench.torque.x,
-				FT_compensated.wrench.torque.y,
-				FT_compensated.wrench.torque.z);
+			FT_compensated.wrench.torque.y,
+			FT_compensated.wrench.torque.z);
 
-	vel_screw_ft.header.frame_id = m_params->GetRobotFtFrameID();
+	vel_screw_ft.header.frame_id = m_params->getRobotFtFrameID();
 	vel_screw_ft.twist.linear.x = 0.0;
 	vel_screw_ft.twist.linear.y = 0.0;
 	vel_screw_ft.twist.linear.z = 0.0;
@@ -64,14 +94,14 @@ TwistStamped ToolSurfaceCalibControl::Run(
 
 		try
 		{
-			m_tf_listener->lookupTransform(m_params->GetRobotBaseFrameID(),
-					m_params->GetRobotFtFrameID(), ros::Time(0), T_base_ft);
+			m_tf_listener->lookupTransform(m_params->getRobotBaseFrameID(),
+					m_params->getRobotFtFrameID(), ros::Time(0), T_base_ft);
 		}
 
 		catch(tf::TransformException &ex)
 		{
 			ROS_ERROR("%s.", ex.what());
-			ROS_ERROR("ToolSurfaceCalibControl: error getting initial position of the FT sensor frame with respect to the base frame.");
+			ROS_ERROR("ContactPointEstimation: error getting initial position of the FT sensor frame with respect to the base frame.");
 			return vel_screw_ft;
 		}
 
@@ -91,14 +121,14 @@ TwistStamped ToolSurfaceCalibControl::Run(
 
 	try
 	{
-		m_tf_listener->lookupTransform(m_params->GetRobotBaseFrameID(),
-				m_params->GetRobotFtFrameID(), ros::Time(0), T_base_ft);
+		m_tf_listener->lookupTransform(m_params->getRobotBaseFrameID(),
+				m_params->getRobotFtFrameID(), ros::Time(0), T_base_ft);
 	}
 
 	catch(tf::TransformException &ex)
 	{
 		ROS_ERROR("%s.", ex.what());
-		ROS_ERROR("ToolSurfaceCalibControl: error getting position of the FT sensor frame expressed in the base frame.");
+		ROS_ERROR("ContactPointEstimation: error getting position of the FT sensor frame expressed in the base frame.");
 		vel_screw_ft.header.stamp = ros::Time::now();
 		return vel_screw_ft;
 	}
@@ -109,17 +139,17 @@ TwistStamped ToolSurfaceCalibControl::Run(
 
 
 	// update contact point estimate
-	UpdateLr(force);
+	updateLr(force);
 
-	UpdateQr(force, torque);
+	updateQr(force, torque);
 
-	UpdateContactPointEstimate();
+	updateContactPointEstimate();
 
 
 	// update surface normal estimate
-	UpdateLn(vel);
+	updateLn(vel);
 
-	UpdateSurfaceNormalEstimate();
+	updateSurfaceNormalEstimate();
 
 
 	// calculate force feedback
@@ -131,7 +161,7 @@ TwistStamped ToolSurfaceCalibControl::Run(
 	}
 
 	// Update arc trajectory
-	UpdateCircleTrajectory(m_p_ft_d, m_v_ft_d);
+	updateCircleTrajectory(m_p_ft_d, m_v_ft_d);
 
 
 	// Update Vd
@@ -153,13 +183,13 @@ TwistStamped ToolSurfaceCalibControl::Run(
 	return vel_screw_ft;
 }
 
-void ToolSurfaceCalibControl::Reset()
+void ContactPointEstimation::reset()
 {
-	m_contact_point_estimate = -m_params->GetInitialR();
+	m_contact_point_estimate = -m_params->getInitialR();
 	m_r_dot = Vector3d::Zero();
 	m_Lr = Matrix3d::Zero();
 	m_Qr = Vector3d::Zero();
-	m_surface_normal_estimate = m_params->GetInitialN();
+	m_surface_normal_estimate = m_params->getInitialN();
 	m_Ln = Matrix3d::Zero();
 	m_Vf_integral = 0.0;
 	m_v_ft = Vector3d::Zero();
@@ -167,33 +197,33 @@ void ToolSurfaceCalibControl::Reset()
 }
 
 
-void ToolSurfaceCalibControl::UpdateLr(const Vector3d& force)
+void ContactPointEstimation::updateLr(const Vector3d& force)
 {
-	double beta_r = m_params->GetBetaR();
-	double control_frequency = m_params->GetControlFrequency();
+	double beta_r = m_params->getBetaR();
+	double control_frequency = m_params->getControlFrequency();
 
-	Matrix3d Sf = SkewSymmetric(force);
+	Matrix3d Sf = eigen_utils::skewSymmetric(force);
 
 	m_Lr = m_Lr + (-beta_r*m_Lr - Sf*Sf)*(1/control_frequency);
 	m_Lr = 0.5*(m_Lr + m_Lr.transpose()); // to keep it symmetric
 }
 
-void ToolSurfaceCalibControl::UpdateQr(const Vector3d &force, const Vector3d& torque)
+void ContactPointEstimation::updateQr(const Vector3d &force, const Vector3d& torque)
 {
-	double beta_r = m_params->GetBetaR();
-	double control_frequency = m_params->GetControlFrequency();
+	double beta_r = m_params->getBetaR();
+	double control_frequency = m_params->getControlFrequency();
 
-	Matrix3d Sf = SkewSymmetric(force);
+	Matrix3d Sf = eigen_utils::skewSymmetric(force);
 
 	m_Qr = m_Qr + (-beta_r*m_Qr + Sf*torque)*(1/control_frequency);
 }
 
 
-void ToolSurfaceCalibControl::UpdateContactPointEstimate()
+void ContactPointEstimation::updateContactPointEstimate()
 {
-	double gamma_r = m_params->GetGammaR();
+	double gamma_r = m_params->getGammaR();
 	double kappa_r = m_params->getKappaR();
-	double control_frequency = m_params->GetControlFrequency();
+	double control_frequency = m_params->getControlFrequency();
 
 	// running average to filter out noise in the update of contact point estimate
 	m_r_dot = (1/20.0)*(19.0*m_r_dot - 1.0*gamma_r*(m_Lr*m_contact_point_estimate + m_Qr));
@@ -204,18 +234,18 @@ void ToolSurfaceCalibControl::UpdateContactPointEstimate()
 }
 
 
-void ToolSurfaceCalibControl::UpdateLn(const Vector3d &v_ft)
+void ContactPointEstimation::updateLn(const Vector3d &v_ft)
 {
-	double beta_n = m_params->GetBetaN();
-	double control_frequency = m_params->GetControlFrequency();
+	double beta_n = m_params->getBetaN();
+	double control_frequency = m_params->getControlFrequency();
 
 	m_Ln = m_Ln + (-beta_n*m_Ln + (v_ft)*((v_ft).transpose()))*(1/control_frequency);
 }
 
-void ToolSurfaceCalibControl::UpdateSurfaceNormalEstimate()
+void ContactPointEstimation::updateSurfaceNormalEstimate()
 {
-	double gamma_n = m_params->GetGammaN();
-	double control_frequency = m_params->GetControlFrequency();
+	double gamma_n = m_params->getGammaN();
+	double control_frequency = m_params->getControlFrequency();
 	Matrix3d Pbar_n = OrthProjMatrix(m_surface_normal_estimate);
 
 	m_surface_normal_estimate = m_surface_normal_estimate - gamma_n*Pbar_n*m_Ln*m_surface_normal_estimate*(1/control_frequency);
@@ -224,11 +254,11 @@ void ToolSurfaceCalibControl::UpdateSurfaceNormalEstimate()
 
 
 
-bool ToolSurfaceCalibControl::Vf(const Vector3d& force, double &v_f)
+bool ContactPointEstimation::Vf(const Vector3d& force, double &v_f)
 {
 	// first transform surface normal to the FT sensor frame
 	Vector3Stamped surface_normal_base;
-	surface_normal_base.header.frame_id = m_params->GetRobotBaseFrameID();
+	surface_normal_base.header.frame_id = m_params->getRobotBaseFrameID();
 	surface_normal_base.header.stamp = ros::Time(0);
 	surface_normal_base.vector.x = m_surface_normal_estimate(0);
 	surface_normal_base.vector.y = m_surface_normal_estimate(1);
@@ -238,14 +268,14 @@ bool ToolSurfaceCalibControl::Vf(const Vector3d& force, double &v_f)
 
 	try
 	{
-		m_tf_listener->transformVector(m_params->GetRobotFtFrameID(),
+		m_tf_listener->transformVector(m_params->getRobotFtFrameID(),
 				surface_normal_base, surface_normal_ft);
 	}
 
 	catch(tf::TransformException &ex)
 	{
 		ROS_ERROR("%s.", ex.what());
-		ROS_ERROR("ToolSurfaceCalibControl: error transforming surface normal vector to the FT sensor frame.");
+		ROS_ERROR("ContactPointEstimation: error transforming surface normal vector to the FT sensor frame.");
 		return false;
 	}
 
@@ -255,10 +285,10 @@ bool ToolSurfaceCalibControl::Vf(const Vector3d& force, double &v_f)
 			surface_normal_ft.vector.z);
 
 	double Fn = (double)surface_normal_estimate_ft.dot(force);
-	double alpha_f = m_params->GetAlphaF();
-	double beta_f = m_params->GetBetaF();
-	double control_frequency = m_params->GetControlFrequency();
-	m_Fn_error = (Fn - m_params->GetNormalForceRef());
+	double alpha_f = m_params->getAlphaF();
+	double beta_f = m_params->getBetaF();
+	double control_frequency = m_params->getControlFrequency();
+	m_Fn_error = (Fn - m_params->getNormalForceRef());
 
 	m_Vf_integral = m_Vf_integral + m_Fn_error*(1/control_frequency);
 
@@ -268,23 +298,23 @@ bool ToolSurfaceCalibControl::Vf(const Vector3d& force, double &v_f)
 
 
 
-Vector3d ToolSurfaceCalibControl::Vd(const Vector3d &p_ft,
+Vector3d ContactPointEstimation::Vd(const Vector3d &p_ft,
 		const Vector3d &p_ft_d, const Vector3d &v_ft_d)
 {
-	double alpha_v_d = m_params->GetAlphaVd();
+	double alpha_v_d = m_params->getAlphaVd();
 	Vector3d v_d = v_ft_d - alpha_v_d*(p_ft-p_ft_d);
 
 	return v_d;
 }
 
-void ToolSurfaceCalibControl::UpdateCircleTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d)
+void ContactPointEstimation::updateCircleTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d)
 {
 	// calculate the elapsed time
 	ros::Duration t_ = ros::Time::now() - m_t_traj_0;
 	double t = t_.toSec();
 
-	double r = m_params->GetCircleTrajRadius();
-	double T = m_params->GetCircleTrajPeriod();
+	double r = m_params->getCircleTrajRadius();
+	double T = m_params->getCircleTrajPeriod();
 	double f = 1/(T);
 
 	Vector3d circle;
@@ -300,14 +330,14 @@ void ToolSurfaceCalibControl::UpdateCircleTrajectory(Vector3d &p_ft_d, Vector3d 
 	v_ft_d(2) = 0.0; //-0.01*2*M_PI*2*f*cos(2*M_PI*2*f*t);
 }
 
-void ToolSurfaceCalibControl::UpdateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d)
+void ContactPointEstimation::updateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d)
 {
 	// calculate the elapsed time
 	ros::Duration t_ = ros::Time::now() - m_t_traj_0;
 	double t = t_.toSec();
-	double speed = m_params->GetLineTrajSpeed();
-	double t1 = m_params->GetLineTrajT1();
-	double t2 = m_params->GetLineTrajT2();
+	double speed = m_params->getLineTrajSpeed();
+	double t1 = m_params->getLineTrajT1();
+	double t2 = m_params->getLineTrajT2();
 
 
 	if(t<0.15*t1)
@@ -397,18 +427,18 @@ void ToolSurfaceCalibControl::UpdateLineTrajectory(Vector3d &p_ft_d, Vector3d &v
 
 }
 
-Vector3d ToolSurfaceCalibControl::Vft(const Vector3d &v_d, double v_f)
+Vector3d ContactPointEstimation::Vft(const Vector3d &v_d, double v_f)
 {
-	Matrix3d Pbar_n = OrthProjMatrix(m_surface_normal_estimate);
-	Vector3d v_ft = Pbar_n*v_d + m_surface_normal_estimate*v_f;
+  Matrix3d Pbar_n = eigen_utils::orthProjMatrix(m_surface_normal_estimate);
+  Vector3d v_ft = Pbar_n*v_d + m_surface_normal_estimate*v_f;
 
-	return v_ft;
+  return v_ft;
 }
 
-PointStamped ToolSurfaceCalibControl::GetContactPointEstimate()
+PointStamped ContactPointEstimation::getContactPointEstimate()
 {
 	PointStamped contact_point;
-	contact_point.header.frame_id = m_params->GetRobotFtFrameID();
+	contact_point.header.frame_id = m_params->getRobotFtFrameID();
 	contact_point.header.stamp = ros::Time::now();
 	contact_point.point.x = -m_contact_point_estimate(0);
 	contact_point.point.y = -m_contact_point_estimate(1);
@@ -417,10 +447,10 @@ PointStamped ToolSurfaceCalibControl::GetContactPointEstimate()
 	return contact_point;
 }
 
-Vector3Stamped ToolSurfaceCalibControl::GetSurfaceNormalEstimate()
+Vector3Stamped ContactPointEstimation::getSurfaceNormalEstimate()
 {
 	Vector3Stamped surface_normal;
-	surface_normal.header.frame_id = m_params->GetRobotBaseFrameID();
+	surface_normal.header.frame_id = m_params->getRobotBaseFrameID();
 	surface_normal.header.stamp = ros::Time::now();
 	surface_normal.vector.x = m_surface_normal_estimate(0);
 	surface_normal.vector.y = m_surface_normal_estimate(1);
@@ -429,13 +459,13 @@ Vector3Stamped ToolSurfaceCalibControl::GetSurfaceNormalEstimate()
 	return surface_normal;
 }
 
-double ToolSurfaceCalibControl::GetNormalForceError()
+double ContactPointEstimation::getNormalForceError()
 {
 	return m_Fn_error;
 }
 
 
-Float64MultiArray ToolSurfaceCalibControl::GetLr()
+Float64MultiArray ContactPointEstimation::getLr()
 {
 	Float64MultiArray Lr;
 
@@ -443,7 +473,7 @@ Float64MultiArray ToolSurfaceCalibControl::GetLr()
 	return Lr;
 }
 
-Float64MultiArray ToolSurfaceCalibControl::GetQr()
+Float64MultiArray ContactPointEstimation::getQr()
 {
 	Float64MultiArray Qr;
 
