@@ -41,10 +41,9 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <std_msgs/Float64.h>
+#include <std_srvs/Empty.h>
 
-#include <kdl/chainfksolvervel_recursive.hpp>
+#include <boost/thread.hpp>
 
 
 
@@ -73,16 +72,18 @@ public:
 	{
 		n_ = ros::NodeHandle("~");
         m_received_ft = false;
-		m_start_controller = false;
+        m_run_estimator = false;
 
 		topicPub_ContactPointEstimate_ = n_.advertise<geometry_msgs::PointStamped>("contact_point_estimate", 1);
 		topicPub_SurfaceNormalEstimate_ = n_.advertise<geometry_msgs::Vector3Stamped>("surface_normal_estimate", 1);
 
-        topicSub_FT_compensated_ = n_.subscribe("ft_compensated", 1,
-				&ContactPointEstimationNode::topicCallback_FT_compensated, this);
+        topicSub_FT_compensated_ = n_.subscribe("ft_compensated", 1, &ContactPointEstimationNode::topicCallback_FT_compensated, this);
 
-		srvServer_Init_ = n_.advertiseService("start", &ContactPointEstimationNode::srvCallback_Init,
+        topicSub_Twist_FT_Sensor_ = n_.subscribe("twist_ft_sensor", 1, &ContactPointEstimationNode::topicCallback_Twist_FT_Sensor, this);
+
+        srvServer_Start_ = n_.advertiseService("start", &ContactPointEstimationNode::srvCallback_Start,
 				this);
+        srvServer_Stop_ = n_.advertiseService("stop", &ContactPointEstimationNode::srvCallback_Stop, this);
 	}
 
 	~ContactPointEstimationNode()
@@ -91,7 +92,7 @@ public:
 		delete cpe;
 	}
 
-	bool getControllerParameters()
+    bool getEstimatorParameters()
 	{
 		double gamma_r;
 		if (n_.hasParam("gamma_r"))
@@ -257,43 +258,65 @@ public:
 		m_received_ft = true;
 	}
 
-    bool srvCallback_Init(cob_srvs::Trigger::Request &req, cob_srvs::Trigger::Response &res)
+    void topicCallback_Twist_FT_Sensor(const geometry_msgs::TwistStampedPtr &msg)
+    {
+        m_twist_ft_sensor = *msg;
+        m_received_twist = true;
+    }
+
+    bool srvCallback_Start(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 	{
-		m_start_controller = true;
+        m_run_estimator = true;
 		return true;
 	}
 
-	bool startController()
+    bool srvCallback_Stop(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+    {
+        m_run_estimator = false;
+        m_received_ft = false;
+        m_received_twist = false;
+        cpe->reset();
+        return true;
+    }
+
+
+    bool estimatorRunning()
 	{
-		return m_start_controller;
+        return m_run_estimator;
 	}
+
+    void contact_point_estimate_threadfunc()
+    {
+        if(!m_run_estimator)
+            return
+        cpe->updateContactPointEstimate(m_ft_compensated);
+        topicPub_ContactPointEstimate_.publish(cpe->getContactPointEstimate());
+        // TODO: sleep here, set another parameter
+    }
+
+    void surface_normal_estimate_threadfunc()
+    {
+        if(!m_run_estimator)
+            return;
+        cpe->updateSurfaceNormalEstimate(m_twist_ft_sensor);
+        topicPub_SurfaceNormalEstimate_.publish(cpe->getSurfaceNormalEstimate());
+        // TODO: sleep here, set another parameter
+    }
+
+
 
 
 private:
-	bool m_InitializedKDL;
-	unsigned int m_DOF;
-	std::string m_ArmSelect;
-	std::string m_vel_commands_topic;
 
-	std::vector<std::string> m_JointNames;
-	geometry_msgs::WrenchStamped m_FT_compensated;
-	std::vector<double> m_JointPos;
-	std::vector<double> m_JointVel;
-	ros::Time m_JointPos_stamp;
-	DumboKDL *m_DumboKDL_;
+    geometry_msgs::WrenchStamped m_ft_compensated;
+    geometry_msgs::TwistStamped m_twist_ft_sensor;
 
-	KDL::ChainFkSolverVel_recursive *m_fk_solver_vel;
-
-
-	double m_v_max;
-	double m_w_max;
-
-	bool m_received_js;
-	bool m_received_estimated_js;
 	bool m_received_ft;
+    bool m_received_twist;
 
-	bool m_start_controller;
+    bool m_run_estimator;
 };
+
 
 int main(int argc, char **argv)
 {
@@ -312,15 +335,6 @@ int main(int argc, char **argv)
 		cpe_node.n_.shutdown();
 		return 0;
 	}
-
-	//initialize arm position
-//	if(!cpe_node.InitializeArmPos())
-//	{
-//		ROS_ERROR("Error initializing arm position");
-//		cpe_node.n_.shutdown();
-//		return 0;
-//	}
-
 
 	// controller main loop
 	double control_frequency;
@@ -366,10 +380,7 @@ int main(int argc, char **argv)
 	}
 
 
-	ros::Rate loop_rate(control_frequency);
-
 	cpe_node.cpe = new ContactPointEstimation(cpe_node.cpe_params);
-
 
 	// wait for init srv to be called to start the controller
 	while(!cpe_node.startController() && cpe_node.n_.ok())
@@ -378,46 +389,16 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 	}
 
-	ros::Time begin = ros::Time::now();
+    ros::AsyncSpinner s(2);
+    s.start();
 
-	while(cpe_node.n_.ok())
-	{
-		if((ros::Time::now()-begin)>=timeout)
-		{
-			ROS_INFO("Timeout... shutting down controller node");
-			cpe_node.n_.shutdown();
-			return 0;
-		}
+    boost::thread contact_point_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::contact_point_estimate_threadfunc, &cpe_node, true));
+    boost::thread surface_normal_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::surface_normal_estimate_threadfunc, &cpe_node, true));
 
-		// if ((ros::Time::now() - cpe_node.last_publish_time) >= control_period)
-		// {
-		geometry_msgs::TwistStamped twist_ft;
-		std::vector<double> joint_vel;
-		if(cpe_node.ExecuteController(twist_ft,joint_vel))
-		{
-			cpe_node.publishVelCommand(joint_vel);
+    contact_point_estimate_thread.join();
+    surface_normal_estimate_thread.join();
 
-			geometry_msgs::PointStamped contact_point_estimate = cpe_node.controller->GetContactPointEstimate();
-			cpe_node.topicPub_ContactPointEstimate_.publish(contact_point_estimate);
-
-			geometry_msgs::Vector3Stamped surface_normal_estimate = cpe_node.controller->GetSurfaceNormalEstimate();
-			cpe_node.topicPub_SurfaceNormalEstimate_.publish(surface_normal_estimate);
-
-			std_msgs::Float64 normal_force_error;
-			normal_force_error.data = cpe_node.controller->GetNormalForceError();
-			cpe_node.topicPub_NormalForceError_.publish(normal_force_error);
-
-			// std_msgs::Float64MultiArray Lr = cpe_node.controller->GetLr();
-			// cpe_node.topicPub_Lr_.publish(Lr);
-
-			// std_msgs::Float64MultiArray Qr = cpe_node.controller->GetQr();
-			// cpe_node.topicPub_Qr_.publish(Qr);
-
-		}
-		// }
-		ros::spinOnce();
-		loop_rate.sleep();
-	}
+    ros::waitForShutdown();
 
 	return 0;
 }
