@@ -58,39 +58,24 @@ public:
 	ContactPointEstimation(ContactPointEstimationParams *params);
 	virtual ~ContactPointEstimation();
 
-	// executes the controller
-	// calculates the velocity screw of FT sensor frame expressed in the base frame)
-	// and updates the estimates of contact point and surface normal
-	// FT_compensated given in FT sensor frame
-	// vel is the estimated velocity of the 
-	virtual TwistStamped controlSignal(const WrenchStamped &ft_compensated, const Vector3d &vel);
-
-	// updates the estimate of the contact point (expressed in the ft sensor frame)
-	// 
-	// ft_compensated are gravity-compensated force-torque measurements which
-	// should be expressed in the ft sensor frame
+	// updates the estimate of the contact point, which will be expressed in 
+	// the reference frame of the force-torque measurements
+	//
+	// ft_compensated are gravity-compensated force-torque measurements
 	virtual void updateContactPointEstimate(const WrenchStamped &ft_compensated);
 
 
 	// updates the estimate of the surface normal expressed in the base frame
-	virtual void updateSurfaceNormalEstimate(const Vector3d &vel);
+	// twist_ft_sensor is the twist of the FT sensor frame expressed in the base frame
+	virtual void updateSurfaceNormalEstimate(const TwistStamped &twist_ft_sensor);
 
-	// resets the controller (integrators and trajectory generators)
+	// resets the estimator
 	virtual void reset();
 
 
 	virtual PointStamped getContactPointEstimate();
 
 	virtual Vector3Stamped getSurfaceNormalEstimate();
-
-	virtual double getNormalForceError();
-
-
-	virtual Float64MultiArray getLr();
-
-	virtual Float64MultiArray getQr();
-
-
 
 protected:
 
@@ -100,75 +85,24 @@ protected:
 	Vector3d m_contact_point_estimate;
 	Vector3d m_r_dot;
 	Matrix3d m_Lr;
-	Vector3d m_Qr;
+	Vector3d m_cr;
 
 
 	// expressed with respect to the base frame
 	Vector3d m_surface_normal_estimate;
 	Matrix3d m_Ln;
 
-	// normal force error
-	double m_Fn_error;
-
-	// expressed in ft sensor frame
-	double m_Vf_integral;
-
-	// reference velocity of FT sensor expressed in the base frame
-	Vector3d m_v_ft;
-
-	// starting time of the trajectory
-	ros::Time m_t_traj_0;
-
-	// initial position of ft sensor with respect to base frame
-	Vector3d m_p_ft_0;
-
-	// set points from the trajectory generator.
-	// pos+vel of the FT sensor frame with respect to the base frame
-	Vector3d m_p_ft_d;
-	Vector3d m_v_ft_d;
-
-	TransformListener *m_tf_listener;
-
 	bool m_init;
 
 
-	// contact point estimate + Lr + Qr expressed in FT sensor frame
+	// contact point estimate + Lr + cr expressed in FT sensor frame
 	void updateLr(const Vector3d &force);
 
-	void updateQr(const Vector3d &force, const Vector3d &torque);
+	void updatecr(const Vector3d &force, const Vector3d &torque);
 
 
 	// velocity of ft sensor frame expressed in base frame
 	virtual void updateLn(const Vector3d &v_ft);
-
-
-	// PI force feedback velocity , everything expressed in FT sensor frame
-	virtual bool Vf(const Vector3d &force, double &v_f);
-
-
-
-	// Vd tracks the trajectory that ft sensor frame will follow, expressed in the base frame
-	// In this case we do an arc trajectory
-	// p_ft : current pos of FT sensor frame expressed in base frame
-	// p_ft_d/v_ft_d: desired pos/vel of FT frame given by trajectory generator
-	virtual Vector3d Vd(const Vector3d &p_ft,
-			const Vector3d &p_ft_d, const Vector3d &v_ft_d);
-
-	// desired FT sensor pos and vel
-	// makes an arc trajectory
-	// p_ft_d/v_ft_d: desired pos/vel of FT frame expressed in the base frame
-	virtual void updateCircleTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
-
-
-
-	// desired FT sensor pos and vel
-	// makes an arc trajectory
-	// p_ft_d/v_ft_d: desired pos/vel of FT frame expressed in the base frame
-	//todo implement this function
-	virtual void updateLineTrajectory(Vector3d &p_ft_d, Vector3d &v_ft_d);
-
-	// calculates reference velocity of ft sensor frame with respect to the base frame
-	virtual Vector3d Vft(const Vector3d &v_d, double v_f);
 
 private:
 

@@ -58,7 +58,7 @@ public:
 	double getBetaR() const;
 	void setBetaR(double beta_r);
 
-	// initial contact point (r) expressed in FT sensor frame
+	// initial estimate of the contact point (r) expressed in FT sensor frame
 	Vector3d getInitialR() const;
 	void setInitialR(const Vector3d &initial_r);
 
@@ -70,50 +70,12 @@ public:
 	double getBetaN() const;
 	void setBetaN(double beta_n);
 
-	// initial surface normal (n) expressed in the base frame
+	// initial estimate of the surface normal (n) expressed in the base frame
 	Vector3d getInitialN() const;
 	void setInitialN(const Vector3d &initial_n);
 
-	// force reference in the normal direction of the surface
-	double getNormalForceRef() const;
-	void setNormalForceRef(double normal_force_ref);
-
-	// control gains (alpha -- P gain, beta -- I gain)for PI force feedback (vf)
-	double getAlphaF() const;
-	void setAlphaF(double alpha_f);
-
-	double getBetaF() const;
-	void setBetaF(double beta_f);
-
 	double getControlFrequency() const;
 	void setControlFrequency(double control_frequency);
-
-	double getAlphaVd() const;
-	void setAlphaVd(double alpha_v_d);
-
-	double getCircleTrajRadius() const;
-	void setCircleTrajRadius(double circle_traj_radius);
-
-	double getCircleTrajPeriod() const;
-	void setCircleTrajPeriod(double circle_traj_period);
-
-	double getLineTrajSpeed() const;
-	void setLineTrajSpeed(double line_traj_speed);
-
-	double getLineTrajT1() const;
-	void setLineTrajT1(double line_traj_t1);
-
-	double getLineTrajT2() const;
-	void setLineTrajT2(double line_traj_t2);
-
-	// robot frame IDs
-	std::string getRobotBaseFrameID() const;
-	void setRobotBaseFrameID(const std::string &robot_base_frame_id);
-
-	std::string getRobotFtFrameID() const;
-	void setRobotFtFrameID(const std::string &robot_ft_frame_id);
-
-
 
 private:
 
@@ -130,25 +92,7 @@ private:
 
 	Vector3d m_initial_n;
 
-	double m_normal_force_ref;
-
-	double m_alpha_f;
-	double m_beta_f;
-
-	double m_alpha_v_d;
-	double m_circle_traj_radius;
-	double m_circle_traj_period;
-
-	double m_line_traj_speed;
-	double m_line_traj_t1;
-	double m_line_traj_t2;
-
 	double m_control_frequency;
-
-	// frame IDs
-	std::string m_robot_base_frame_id;
-	std::string m_robot_ft_frame_id; // force-torque sensor
-
 };
 
 #endif /* CONTACTPOINTESTIMATIONPARAMS_H_ */

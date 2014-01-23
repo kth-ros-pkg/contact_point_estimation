@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(contact_point_estimation)
 
-find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs tf tf_conversions eigen_conversions tf2_geometry_msgs tf2_kdl std_msgs adaptive_control_utils)
+find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs eigen_conversions std_msgs std_srvs eigen_utils)
 
 find_package(Eigen REQUIRED)
 
@@ -14,7 +14,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 catkin_package(
   DEPENDS eigen
-  CATKIN_DEPENDS roscpp geometry_msgs tf tf_conversions eigen_conversions tf2_geometry_msgs tf2_kdl std_msgs adaptive_control_utils
+  CATKIN_DEPENDS roscpp geometry_msgs eigen_conversions std_msgs std_srvs eigen_utils
   INCLUDE_DIRS include
   LIBRARIES
 )
