@@ -219,20 +219,32 @@ public:
 		}
 
 
-		double control_frequency;
-		if (n_.hasParam("control_frequency"))
+        double cpe_update_frequency;
+        if (n_.hasParam("cpe_update_frequency"))
 		{
-			n_.getParam("control_frequency", control_frequency);
+            n_.getParam("cpe_update_frequency", cpe_update_frequency);
 		}
 
 		else
 		{
-			ROS_ERROR("Parameter control_frequency not set, shutting down node...");
+            ROS_ERROR("Parameter cpe_update_frequency not set, shutting down node...");
 			n_.shutdown();
 			return false;
 		}
 
 
+        double sne_update_frequency;
+        if (n_.hasParam("sne_update_frequency"))
+        {
+            n_.getParam("sne_update_frequency", sne_update_frequency);
+        }
+
+        else
+        {
+            ROS_ERROR("Parameter sne_update_frequency not set, shutting down node...");
+            n_.shutdown();
+            return false;
+        }
 
 		bool ret = true;
         cpe_params = new ContactPointEstimationParams();
@@ -246,7 +258,8 @@ public:
         cpe_params->setBetaN(beta_n);
         cpe_params->setInitialN(initial_n);
 
-        cpe_params->setControlFrequency(control_frequency);
+        cpe_params->setContactPointEstimatorUpdateFrequency(cpe_update_frequency);
+        cpe_params->setSurfaceNormalEstimatorUpdateFrequency(sne_update_frequency);
 
 		return ret;
 
@@ -291,7 +304,7 @@ public:
             return
         cpe->updateContactPointEstimate(m_ft_compensated);
         topicPub_ContactPointEstimate_.publish(cpe->getContactPointEstimate());
-        // TODO: sleep here, set another parameter
+        ros::Duration(1/(cpe_params->getContactPointEstimatorUpdateFrequency())).sleep();
     }
 
     void surface_normal_estimate_threadfunc()
@@ -300,7 +313,7 @@ public:
             return;
         cpe->updateSurfaceNormalEstimate(m_twist_ft_sensor);
         topicPub_SurfaceNormalEstimate_.publish(cpe->getSurfaceNormalEstimate());
-        // TODO: sleep here, set another parameter
+        ros::Duration(1/(cpe_params->getSurfaceNormalEstimatorUpdateFrequency())).sleep();
     }
 
 

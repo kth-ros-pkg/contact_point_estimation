@@ -74,8 +74,11 @@ public:
 	Vector3d getInitialN() const;
 	void setInitialN(const Vector3d &initial_n);
 
-	double getControlFrequency() const;
-	void setControlFrequency(double control_frequency);
+    double getContactPointEstimatorUpdateFrequency() const;
+    void setContactPointEstimatorUpdateFrequency(double cpe_update_frequency);
+
+    double getSurfaceNormalEstimatorUpdateFrequency() const;
+    void setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency);
 
 private:
 
@@ -93,6 +96,9 @@ private:
 	Vector3d m_initial_n;
 
 	double m_control_frequency;
+
+    double m_cpe_update_frequency;
+    double m_sne_update_frequency;
 };
 
 #endif /* CONTACTPOINTESTIMATIONPARAMS_H_ */

@@ -122,12 +122,27 @@ void ContactPointEstimationParams::setInitialN(const Vector3d &initial_n)
 }
 
 
-double ContactPointEstimationParams::getControlFrequency() const
+double ContactPointEstimationParams::getContactPointEstimatorUpdateFrequency() const
 {
-	return m_control_frequency;
+    return m_cpe_update_frequency;
 }
 
-void ContactPointEstimationParams::setControlFrequency(double control_frequency)
+double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency() const
 {
-	m_control_frequency = control_frequency;
+    return m_sn_update_frequency;
+}
+
+void ContactPointEstimationParams::setContactPointEstimatorUpdateFrequency(double cpe_update_frequency)
+{
+    m_cpe_update_frequency = cpe_update_frequency;
+}
+
+double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency()
+{
+    return m_sne_update_frequency;
+}
+
+void ContactPointEstimationParams::setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency) const
+{
+    m_sne_update_frequency = sne_update_frequency;
 }
