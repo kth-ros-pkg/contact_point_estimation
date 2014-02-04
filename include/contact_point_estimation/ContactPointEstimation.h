@@ -92,7 +92,9 @@ protected:
 	Vector3d m_surface_normal_estimate;
 	Matrix3d m_Ln;
 
-	bool m_init;
+	// measurements
+	WrenchStamped m_ft_compensated;
+	TwistStamped m_twist_ft_sensor;
 
 
 	// contact point estimate + Lr + cr expressed in FT sensor frame
@@ -100,8 +102,7 @@ protected:
 
 	void updatecr(const Vector3d &force, const Vector3d &torque);
 
-
-	// velocity of ft sensor frame expressed in base frame
+	// velocity of ft sensor frame expressed in frame of FT sensor twist
 	virtual void updateLn(const Vector3d &v_ft);
 
 private:

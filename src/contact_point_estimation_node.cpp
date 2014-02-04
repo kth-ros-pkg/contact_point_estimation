@@ -61,7 +61,8 @@ public:
     ros::Subscriber topicSub_Twist_FT_Sensor_;
 
     /// declaration of service servers
-    ros::ServiceServer srvServer_Init_;
+    ros::ServiceServer srvServer_Start_;
+    ros::ServiceServer srvServer_Stop_;
 
 	ros::Time last_publish_time;
 	ContactPointEstimationParams *cpe_params;
@@ -267,7 +268,7 @@ public:
 
 	void topicCallback_FT_compensated(const geometry_msgs::WrenchStampedPtr &msg)
 	{
-		m_FT_compensated = *msg;
+		m_ft_compensated = *msg;
 		m_received_ft = true;
 	}
 
@@ -280,6 +281,7 @@ public:
     bool srvCallback_Start(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 	{
         m_run_estimator = true;
+        cpe->reset();
 		return true;
 	}
 
@@ -301,7 +303,23 @@ public:
     void contact_point_estimate_threadfunc()
     {
         if(!m_run_estimator)
-            return
+        {
+            ros::Duration(1/(cpe_params->getContactPointEstimatorUpdateFrequency())).sleep();
+            return;
+        }
+
+        if(!m_received_ft)
+        {
+        	static ros::Time t = ros::Time::now();
+        	if((ros::Time::now()-t).toSec()>1.0)
+        	{
+        		ROS_ERROR("Haven't received FT sensor measurements");
+        		t = ros::Time::now();
+        	}
+
+        	return;
+        }
+
         cpe->updateContactPointEstimate(m_ft_compensated);
         topicPub_ContactPointEstimate_.publish(cpe->getContactPointEstimate());
         ros::Duration(1/(cpe_params->getContactPointEstimatorUpdateFrequency())).sleep();
@@ -310,7 +328,22 @@ public:
     void surface_normal_estimate_threadfunc()
     {
         if(!m_run_estimator)
+        {
+            ros::Duration(1/(cpe_params->getSurfaceNormalEstimatorUpdateFrequency())).sleep();
             return;
+        }
+
+        if(!m_received_twist)
+        {
+        	static ros::Time t = ros::Time::now();
+        	if((ros::Time::now()-t).toSec()>1.0)
+        	{
+        		ROS_ERROR("Haven't received FT sensor twist");
+        		t = ros::Time::now();
+        	}
+        	return;
+        }
+
         cpe->updateSurfaceNormalEstimate(m_twist_ft_sensor);
         topicPub_SurfaceNormalEstimate_.publish(cpe->getSurfaceNormalEstimate());
         ros::Duration(1/(cpe_params->getSurfaceNormalEstimatorUpdateFrequency())).sleep();
@@ -337,70 +370,14 @@ int main(int argc, char **argv)
 
 	ContactPointEstimationNode cpe_node;
 
-	if(!cpe_node.getROSParameters())
+	if(!cpe_node.getEstimatorParameters())
 	{
-		cpe_node.n_.shutdown();
-		return 0;
-	}
-
-	if(!cpe_node.getControllerParameters())
-	{
-		cpe_node.n_.shutdown();
-		return 0;
-	}
-
-	// controller main loop
-	double control_frequency;
-	if (cpe_node.n_.hasParam("control_frequency"))
-	{
-		cpe_node.n_.getParam("control_frequency", control_frequency);
-	}
-
-	else
-	{
-		ROS_ERROR("Parameter control_frequency not available, shutting down node...");
-		cpe_node.n_.shutdown();
-		return 0;
-	}
-
-	if(control_frequency<=0.0)
-	{
-		ROS_ERROR("Error in control_frequency");
-		cpe_node.n_.shutdown();
-		return 0;
-	}
-
-	ros::Duration timeout;
-	double sec;
-	if (cpe_node.n_.hasParam("timeout"))
-	{
-		cpe_node.n_.getParam("timeout", sec);
-		timeout.fromSec(sec);
-	}
-
-	else
-	{
-		ROS_ERROR("Parameter timeout not available, shutting down node...");
-		cpe_node.n_.shutdown();
-		return 0;
-	}
-
-	if(sec<=0.0)
-	{
-		ROS_ERROR("Error in timeout");
 		cpe_node.n_.shutdown();
 		return 0;
 	}
 
 
 	cpe_node.cpe = new ContactPointEstimation(cpe_node.cpe_params);
-
-	// wait for init srv to be called to start the controller
-	while(!cpe_node.startController() && cpe_node.n_.ok())
-	{
-		ros::Duration(1.0).sleep();
-		ros::spinOnce();
-	}
 
     ros::AsyncSpinner s(2);
     s.start();

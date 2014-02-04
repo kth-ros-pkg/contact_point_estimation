@@ -50,7 +50,6 @@ ContactPointEstimation::ContactPointEstimation(ContactPointEstimationParams *par
 	m_cr = Vector3d::Zero();
 	m_surface_normal_estimate = m_params->getInitialN();
 	m_Ln = Matrix3d::Zero();
-	m_init = false;
 
 }
 
@@ -62,7 +61,8 @@ void ContactPointEstimation::updateContactPointEstimate(const WrenchStamped &ft_
 {
 	double gamma_r = m_params->getGammaR();
 	double kappa_r = m_params->getKappaR();
-	double control_frequency = m_params->getControlFrequency();
+    double cpe_update_frequency = m_params->getContactPointEstimatorUpdateFrequency();
+    m_ft_compensated = ft_compensated;
 
 	Vector3d force(ft_compensated.wrench.force.x,
 			ft_compensated.wrench.force.y,
@@ -72,31 +72,32 @@ void ContactPointEstimation::updateContactPointEstimate(const WrenchStamped &ft_
 			ft_compensated.wrench.torque.y,
 			ft_compensated.wrench.torque.z);
 
-	UpdateLr(force);
+	updateLr(force);
 
-	Updatecr(force, torque);
+	updatecr(force, torque);
 
 	// running average to filter out noise in the update of contact point estimate
 	m_r_dot = (1/20.0)*(19.0*m_r_dot - 1.0*gamma_r*(m_Lr*m_contact_point_estimate + m_cr));
 
 	m_contact_point_estimate = m_contact_point_estimate
-			+ m_r_dot *(1/control_frequency)
-			- kappa_r*m_contact_point_estimate*(1/control_frequency);
+			+ m_r_dot *(1/cpe_update_frequency)
+			- kappa_r*m_contact_point_estimate*(1/cpe_update_frequency);
 }
 
 void ContactPointEstimation::updateSurfaceNormalEstimate(const TwistStamped &twist_ft_sensor)
 {
 	double gamma_n = m_params->getGammaN();
-	double control_frequency = m_params->getControlFrequency();
+	double sne_update_frequency = m_params->getSurfaceNormalEstimatorUpdateFrequency();
 	Matrix3d Pbar_n = eigen_utils::orthProjMatrix(m_surface_normal_estimate);
+	m_twist_ft_sensor = twist_ft_sensor;
 
 	Vector3d vel(twist_ft_sensor.twist.linear.x, 
 		     twist_ft_sensor.twist.linear.y, 
 		     twist_ft_sensor.twist.linear.z);
 
-	UpdateLn(vel);
+	updateLn(vel);
 
-	m_surface_normal_estimate = m_surface_normal_estimate - gamma_n*Pbar_n*m_Ln*m_surface_normal_estimate*(1/control_frequency);
+	m_surface_normal_estimate = m_surface_normal_estimate - gamma_n*Pbar_n*m_Ln*m_surface_normal_estimate*(1/sne_update_frequency);
 	m_surface_normal_estimate.normalize();
 }
 
@@ -109,13 +110,12 @@ void ContactPointEstimation::reset()
 	m_cr = Vector3d::Zero();
 	m_surface_normal_estimate = m_params->getInitialN();
 	m_Ln = Matrix3d::Zero();
-	m_init = false;
 }
 
 PointStamped ContactPointEstimation::getContactPointEstimate()
 {
 	PointStamped contact_point;
-	contact_point.header.frame_id = m_params->getRobotFtFrameID();
+	contact_point.header.frame_id = m_ft_compensated.header.frame_id;
 	contact_point.header.stamp = ros::Time::now();
 	contact_point.point.x = -m_contact_point_estimate(0);
 	contact_point.point.y = -m_contact_point_estimate(1);
@@ -127,7 +127,7 @@ PointStamped ContactPointEstimation::getContactPointEstimate()
 Vector3Stamped ContactPointEstimation::getSurfaceNormalEstimate()
 {
 	Vector3Stamped surface_normal;
-	surface_normal.header.frame_id = m_params->getRobotBaseFrameID();
+	surface_normal.header.frame_id = m_twist_ft_sensor.header.frame_id;
 	surface_normal.header.stamp = ros::Time::now();
 	surface_normal.vector.x = m_surface_normal_estimate(0);
 	surface_normal.vector.y = m_surface_normal_estimate(1);
@@ -139,28 +139,28 @@ Vector3Stamped ContactPointEstimation::getSurfaceNormalEstimate()
 void ContactPointEstimation::updateLr(const Vector3d& force)
 {
 	double beta_r = m_params->getBetaR();
-	double control_frequency = m_params->getControlFrequency();
+	double cpe_update_frequency = m_params->getContactPointEstimatorUpdateFrequency();
 
 	Matrix3d Sf = eigen_utils::skewSymmetric(force);
 
-	m_Lr = m_Lr + (-beta_r*m_Lr - Sf*Sf)*(1/control_frequency);
+	m_Lr = m_Lr + (-beta_r*m_Lr - Sf*Sf)*(1/cpe_update_frequency);
 	m_Lr = 0.5*(m_Lr + m_Lr.transpose()); // to keep it symmetric
 }
 
 void ContactPointEstimation::updatecr(const Vector3d &force, const Vector3d& torque)
 {
 	double beta_r = m_params->getBetaR();
-	double control_frequency = m_params->getControlFrequency();
+	double cpe_update_frequency = m_params->getContactPointEstimatorUpdateFrequency();
 
 	Matrix3d Sf = eigen_utils::skewSymmetric(force);
 
-	m_cr = m_cr + (-beta_r*m_cr + Sf*torque)*(1/control_frequency);
+	m_cr = m_cr + (-beta_r*m_cr + Sf*torque)*(1/cpe_update_frequency);
 }
 
 void ContactPointEstimation::updateLn(const Vector3d &v_ft)
 {
 	double beta_n = m_params->getBetaN();
-	double control_frequency = m_params->getControlFrequency();
+	double sne_update_frequency = m_params->getSurfaceNormalEstimatorUpdateFrequency();
 
-	m_Ln = m_Ln + (-beta_n*m_Ln + (v_ft)*((v_ft).transpose()))*(1/control_frequency);
+	m_Ln = m_Ln + (-beta_n*m_Ln + (v_ft)*((v_ft).transpose()))*(1/sne_update_frequency);
 }

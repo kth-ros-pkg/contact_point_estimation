@@ -38,14 +38,13 @@
 
 ContactPointEstimationParams::ContactPointEstimationParams()
 {
-	// TODO Auto-generated constructor stub
 	m_kappa_r = 0.0;
 
 }
 
 ContactPointEstimationParams::~ContactPointEstimationParams()
 {
-	// TODO Auto-generated destructor stub
+
 }
 
 
@@ -127,22 +126,17 @@ double ContactPointEstimationParams::getContactPointEstimatorUpdateFrequency() c
     return m_cpe_update_frequency;
 }
 
-double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency() const
-{
-    return m_sn_update_frequency;
-}
-
 void ContactPointEstimationParams::setContactPointEstimatorUpdateFrequency(double cpe_update_frequency)
 {
     m_cpe_update_frequency = cpe_update_frequency;
 }
 
-double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency()
+double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency() const
 {
     return m_sne_update_frequency;
 }
 
-void ContactPointEstimationParams::setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency) const
+void ContactPointEstimationParams::setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency)
 {
     m_sne_update_frequency = sne_update_frequency;
 }
