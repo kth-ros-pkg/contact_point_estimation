@@ -73,9 +73,9 @@ public:
 	virtual void reset();
 
 
-	virtual PointStamped getContactPointEstimate();
+	virtual PointStamped getContactPointEstimate() const;
 
-	virtual Vector3Stamped getSurfaceNormalEstimate();
+	virtual Vector3Stamped getSurfaceNormalEstimate() const;
 
 protected:
 

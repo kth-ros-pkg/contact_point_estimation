@@ -112,7 +112,7 @@ void ContactPointEstimation::reset()
 	m_Ln = Matrix3d::Zero();
 }
 
-PointStamped ContactPointEstimation::getContactPointEstimate()
+PointStamped ContactPointEstimation::getContactPointEstimate() const
 {
 	PointStamped contact_point;
 	contact_point.header.frame_id = m_ft_compensated.header.frame_id;
@@ -124,7 +124,7 @@ PointStamped ContactPointEstimation::getContactPointEstimate()
 	return contact_point;
 }
 
-Vector3Stamped ContactPointEstimation::getSurfaceNormalEstimate()
+Vector3Stamped ContactPointEstimation::getSurfaceNormalEstimate() const
 {
 	Vector3Stamped surface_normal;
 	surface_normal.header.frame_id = m_twist_ft_sensor.header.frame_id;
