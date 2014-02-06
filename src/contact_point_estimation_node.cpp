@@ -382,8 +382,8 @@ int main(int argc, char **argv)
     ros::AsyncSpinner s(2);
     s.start();
 
-    boost::thread contact_point_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::contact_point_estimate_threadfunc, &cpe_node, true));
-    boost::thread surface_normal_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::surface_normal_estimate_threadfunc, &cpe_node, true));
+    boost::thread contact_point_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::contact_point_estimate_threadfunc, &cpe_node));
+    boost::thread surface_normal_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::surface_normal_estimate_threadfunc, &cpe_node));
 
     contact_point_estimate_thread.join();
     surface_normal_estimate_thread.join();

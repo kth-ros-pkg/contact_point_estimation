@@ -16,15 +16,16 @@
   <build_depend>roscpp</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>eigen</build_depend>
-  <build_depend>eigen_conversions</build_depend>
+  <build_depend>orocos_kdl</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
   <build_depend>eigen_utils</build_depend>
+  
 
   <run_depend>roscpp</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>eigen</run_depend>
-  <run_depend>eigen_conversions</run_depend>
+  <run_depend>orocos_kdl</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>std_srvs</run_depend>
   <run_depend>eigen_utils</run_depend>
