@@ -49,7 +49,7 @@ public:
 
 	// set controller parameters
 	void setNormalForceCompensationGains(double alpha_p, double alpha_i);
-	void setTrajectoryControlGain(double alpha);
+	void setTrajectoryPosControlGain(double alpha);
 	void setDesiredNormalForce(double f_d);
 	void setControlFrequency(double control_freq);
 

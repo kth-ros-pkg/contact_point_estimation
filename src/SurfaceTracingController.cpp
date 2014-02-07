@@ -55,7 +55,7 @@ void SurfaceTracingController::setNormalForceCompensationGains(double alpha_p,
 	m_alpha_i = alpha_i;
 }
 
-void SurfaceTracingController::setTrajectoryControlGain(double alpha)
+void SurfaceTracingController::setTrajectoryPosControlGain(double alpha)
 {
 	m_alpha = alpha;
 }
