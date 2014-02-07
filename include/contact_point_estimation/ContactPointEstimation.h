@@ -38,7 +38,7 @@
 #define CONTACTPOINTESTIMATION_H_
 
 #include <contact_point_estimation/ContactPointEstimationParams.h>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Core>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/TwistStamped.h>

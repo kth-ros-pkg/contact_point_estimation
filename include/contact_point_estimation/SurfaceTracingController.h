@@ -37,7 +37,6 @@
 #define SURFACETRACINGCONTROLLER_H_
 
 #include <eigen3/Eigen/Core>
-#include <eigen_conversions/eigen_kdl.h>
 
 using namespace Eigen;
 

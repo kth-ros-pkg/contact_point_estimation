@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(contact_point_estimation)
 
-find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs orocos_kdl std_srvs eigen_utils)
+find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs std_srvs eigen_utils)
 
 find_package(Eigen REQUIRED)
 
@@ -17,7 +17,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 catkin_package(
   DEPENDS eigen
-  CATKIN_DEPENDS roscpp geometry_msgs orocos_kdl std_srvs eigen_utils
+  CATKIN_DEPENDS roscpp geometry_msgs std_srvs eigen_utils
   INCLUDE_DIRS include
   LIBRARIES contact_point_estimation surface_tracing_controller
 )
