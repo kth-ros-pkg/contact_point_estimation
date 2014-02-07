@@ -36,8 +36,6 @@
 
 #include <contact_point_estimation/ContactPointEstimation.h>
 #include <eigen_utils/eigen_utils.h>
-#include <eigen_conversions/eigen_msg.h>
-#include <tf/transform_datatypes.h>
 
 
 ContactPointEstimation::ContactPointEstimation(ContactPointEstimationParams *params)

@@ -38,18 +38,15 @@
 #define CONTACTPOINTESTIMATION_H_
 
 #include <contact_point_estimation/ContactPointEstimationParams.h>
-#include <tf/transform_listener.h>
 #include <Eigen/Dense>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
-#include <std_msgs/Float64MultiArray.h>
 
 using namespace Eigen;
 using namespace geometry_msgs;
-using namespace tf;
 using namespace std_msgs;
 
 class ContactPointEstimation
