@@ -165,6 +165,18 @@ public:
 			initial_r(i) = (double)initial_r_XmlRpc[i];
 		}
 
+		double cpe_update_frequency;
+		if (n_.hasParam("cpe_update_frequency"))
+		{
+			n_.getParam("cpe_update_frequency", cpe_update_frequency);
+		}
+
+		else
+		{
+			ROS_ERROR("Parameter cpe_update_frequency not set, shutting down node...");
+			n_.shutdown();
+			return false;
+		}
 
 		double gamma_n;
 		if (n_.hasParam("gamma_n"))
@@ -218,20 +230,6 @@ public:
 		for (int i = 0; i < initial_n_XmlRpc.size(); i++)
 		{
 			initial_n(i) = (double)initial_n_XmlRpc[i];
-		}
-
-
-        double cpe_update_frequency;
-        if (n_.hasParam("cpe_update_frequency"))
-		{
-            n_.getParam("cpe_update_frequency", cpe_update_frequency);
-		}
-
-		else
-		{
-            ROS_ERROR("Parameter cpe_update_frequency not set, shutting down node...");
-			n_.shutdown();
-			return false;
 		}
 
 
