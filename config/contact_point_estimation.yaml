@@ -1,0 +1,14 @@
+# gains of the contact point estimator
+gamma_r: 7.0
+kappa_r: 0.0
+beta_r: 0.2
+
+# initial contact point (in FT sensor frame)
+initial_r: [0.2, 0.2, 0.1]
+
+# gains of surface normal estimator
+gamma_n: 250000.0
+beta_n: 150.0
+
+# initial surface normal (in base frame)
+initial_n: [0.35, 0.35, 0.866]

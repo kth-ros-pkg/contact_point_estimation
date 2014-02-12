@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-
-
-  <node ns="left_arm_spoon_tool" pkg="tf" type="static_transform_publisher" name="tf_publisher_EE_CenterMass"
-        args="0.0 0.008 0.3085 0 0 0  /left_arm_FT_sensor /left_arm_spoon_tool 100" />  
-
-</launch>
