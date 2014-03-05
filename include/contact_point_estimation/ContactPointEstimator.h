@@ -1,5 +1,5 @@
 /*
- *  ContactPointEstimationParams.h
+ *  ContactPointEstimator.h
  *
  *
  *  Created on: Jan 14, 2014
@@ -34,71 +34,59 @@
 */
 
 
-#ifndef CONTACTPOINTESTIMATIONPARAMS_H_
-#define CONTACTPOINTESTIMATIONPARAMS_H_
+#ifndef CONTACTPOINTESTIMATOR_H_
+#define CONTACTPOINTESTIMATOR_H_
 
+#include <contact_point_estimation/ContactPointEstimatorParams.h>
 #include <eigen3/Eigen/Core>
-using namespace Eigen;
+#include <geometry_msgs/WrenchStamped.h>
+#include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 
-class ContactPointEstimationParams
+using namespace Eigen;
+using namespace geometry_msgs;
+using namespace std_msgs;
+
+class ContactPointEstimator
 {
 public:
-	ContactPointEstimationParams();
-	virtual ~ContactPointEstimationParams();
+	ContactPointEstimator(ContactPointEstimatorParams *params);
+	virtual ~ContactPointEstimator();
 
-	// gamma_r is the gain of the contact point (r) estimator
-	double getGammaR() const;
-	void setGammaR(double gamma_r);
+	// updates the estimate of the contact point, which will be expressed in 
+	// the reference frame of the force-torque measurements
+	//
+	// ft_compensated are gravity-compensated force-torque measurements
+	virtual void update(const WrenchStamped &ft_compensated);
 
-	// gamma_r gain of the robustifying term of the contact point estimator
-	double getKappaR() const;
-	void setKappaR(double kappa_r);
+	// resets the estimator
+	virtual void reset();
 
-	// beta_r is the gain for Lr and Qr in the contact point estimator
-	double getBetaR() const;
-	void setBetaR(double beta_r);
+	virtual PointStamped getEstimate() const;
 
-	// initial estimate of the contact point (r) expressed in FT sensor frame
-	Vector3d getInitialR() const;
-	void setInitialR(const Vector3d &initial_r);
+protected:
 
-	// gamma_n is the gain of the surface normal (n) estimator
-	double getGammaN() const;
-	void setGammaN(double gamma_n);
+	ContactPointEstimatorParams *m_params;
 
-	// beta_n is the gain of the Ln in the surface normal estimator
-	double getBetaN() const;
-	void setBetaN(double beta_n);
+	// expressed relative to FT sensor frame
+	Vector3d m_contact_point_estimate;
+	Vector3d m_r_dot;
+	Matrix3d m_Lr;
+	Vector3d m_cr;
 
-	// initial estimate of the surface normal (n) expressed in the base frame
-	Vector3d getInitialN() const;
-	void setInitialN(const Vector3d &initial_n);
+	// measurements
+	WrenchStamped m_ft_compensated;
 
-    double getContactPointEstimatorUpdateFrequency() const;
-    void setContactPointEstimatorUpdateFrequency(double cpe_update_frequency);
+	// contact point estimate + Lr + cr expressed in FT sensor frame
+	void updateLr(const Vector3d &force);
 
-    double getSurfaceNormalEstimatorUpdateFrequency() const;
-    void setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency);
+	void updatecr(const Vector3d &force, const Vector3d &torque);
 
 private:
 
 
-	double m_gamma_r;
-	double m_beta_r;
-
-	double m_kappa_r;
-
-	Vector3d m_initial_r;
-
-	double m_gamma_n;
-	double m_beta_n;
-
-	Vector3d m_initial_n;
-
-	double m_control_frequency;
-
-    double m_cpe_update_frequency;
-    double m_sne_update_frequency;
 };
 
-#endif /* CONTACTPOINTESTIMATIONPARAMS_H_ */
+#endif /* CONTACTPOINTESTIMATOR_H_ */

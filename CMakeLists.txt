@@ -19,19 +19,22 @@ catkin_package(
   DEPENDS eigen
   CATKIN_DEPENDS roscpp geometry_msgs std_srvs eigen_utils
   INCLUDE_DIRS include
-  LIBRARIES contact_point_estimation surface_tracing_controller
+  LIBRARIES contact_point_estimator surface_normal_estimator surface_tracing_controller
 )
 
-add_executable(contact_point_estimation_node src/ContactPointEstimationParams.cpp src/ContactPointEstimation.cpp src/contact_point_estimation_node.cpp)
+add_executable(contact_point_estimation_node src/ContactPointEstimatorParams.cpp src/SurfaceNormalEstimatorParams.cpp src/ContactPointEstimator.cpp src/SurfaceNormalEstimator.cpp src/contact_point_estimation_node.cpp)
 target_link_libraries(contact_point_estimation_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_library(contact_point_estimation src/ContactPointEstimationParams.cpp src/ContactPointEstimation.cpp)
-target_link_libraries(contact_point_estimation ${catkin_LIBRARIES})
+add_library(contact_point_estimator src/ContactPointEstimatorParams.cpp src/SurfaceNormalEstimatorParams.cpp src/ContactPointEstimator.cpp src/SurfaceNormalEstimator.cpp)
+target_link_libraries(contact_point_estimator ${catkin_LIBRARIES})
+
+add_library(surface_normal_estimator src/SurfaceNormalEstimatorParams.cpp src/SurfaceNormalEstimator.cpp)
+target_link_libraries(surface_normal_estimator ${catkin_LIBRARIES})
 
 add_library(surface_tracing_controller src/SurfaceTracingController.cpp)
 target_link_libraries(surface_tracing_controller ${catkin_LIBRARIES})
 
-install(TARGETS contact_point_estimation_node surface_tracing_controller
+install(TARGETS contact_point_estimation_node contact_point_estimator surface_normal_estimator surface_tracing_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

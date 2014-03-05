@@ -1,5 +1,5 @@
 /*
- *  ContactPointEstimationParams.cpp
+ *  ContactPointEstimatorParams.cpp
  *
  *
  *  Created on: Jan 14, 2014
@@ -34,109 +34,65 @@
 */
 
 
-#include <contact_point_estimation/ContactPointEstimationParams.h>
+#include <contact_point_estimation/ContactPointEstimatorParams.h>
 
-ContactPointEstimationParams::ContactPointEstimationParams()
+ContactPointEstimatorParams::ContactPointEstimatorParams()
 {
 	m_kappa_r = 0.0;
 
 }
 
-ContactPointEstimationParams::~ContactPointEstimationParams()
+ContactPointEstimatorParams::~ContactPointEstimatorParams()
 {
 
 }
 
-
-double ContactPointEstimationParams::getGammaR() const
+double ContactPointEstimatorParams::getGammaR() const
 {
 	return m_gamma_r;
 }
 
-void ContactPointEstimationParams::setGammaR(double gamma_r)
+void ContactPointEstimatorParams::setGammaR(double gamma_r)
 {
 	m_gamma_r = gamma_r;
 }
 
-double ContactPointEstimationParams::getKappaR() const {
+double ContactPointEstimatorParams::getKappaR() const {
 	return m_kappa_r;
 }
 
-void ContactPointEstimationParams::setKappaR(double kappa_r) {
+void ContactPointEstimatorParams::setKappaR(double kappa_r) {
 	m_kappa_r = kappa_r;
 }
 
 
-double ContactPointEstimationParams::getBetaR() const
+double ContactPointEstimatorParams::getBetaR() const
 {
 	return m_beta_r;
 }
 
-void ContactPointEstimationParams::setBetaR(double beta_r)
+void ContactPointEstimatorParams::setBetaR(double beta_r)
 {
 	m_beta_r = beta_r;
 }
 
 
-
-Vector3d ContactPointEstimationParams::getInitialR() const
+Vector3d ContactPointEstimatorParams::getInitialR() const
 {
 	return m_initial_r;
 }
 
-void ContactPointEstimationParams::setInitialR(const Vector3d &initial_r)
+void ContactPointEstimatorParams::setInitialR(const Vector3d &initial_r)
 {
 	m_initial_r = initial_r;
 }
 
-
-double ContactPointEstimationParams::getGammaN() const
+double ContactPointEstimatorParams::getUpdateFrequency() const
 {
-	return m_gamma_n;
+    return m_update_frequency;
 }
 
-void ContactPointEstimationParams::setGammaN(double gamma_n)
+void ContactPointEstimatorParams::setUpdateFrequency(double update_frequency)
 {
-	m_gamma_n = gamma_n;
-}
-
-double ContactPointEstimationParams::getBetaN() const
-{
-	return m_beta_n;
-}
-
-void ContactPointEstimationParams::setBetaN(double beta_n)
-{
-	m_beta_n = beta_n;
-}
-
-Vector3d ContactPointEstimationParams::getInitialN() const
-{
-	return m_initial_n;
-}
-
-void ContactPointEstimationParams::setInitialN(const Vector3d &initial_n)
-{
-	m_initial_n = initial_n.normalized();
-}
-
-
-double ContactPointEstimationParams::getContactPointEstimatorUpdateFrequency() const
-{
-    return m_cpe_update_frequency;
-}
-
-void ContactPointEstimationParams::setContactPointEstimatorUpdateFrequency(double cpe_update_frequency)
-{
-    m_cpe_update_frequency = cpe_update_frequency;
-}
-
-double ContactPointEstimationParams::getSurfaceNormalEstimatorUpdateFrequency() const
-{
-    return m_sne_update_frequency;
-}
-
-void ContactPointEstimationParams::setSurfaceNormalEstimatorUpdateFrequency(double sne_update_frequency)
-{
-    m_sne_update_frequency = sne_update_frequency;
+    m_update_frequency = update_frequency;
 }

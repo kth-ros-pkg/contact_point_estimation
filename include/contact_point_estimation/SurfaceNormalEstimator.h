@@ -1,5 +1,5 @@
 /*
- *  ContactPointEstimation.h
+ *  SurfaceNormalEstimator.h
  *
  *
  *  Created on: Jan 14, 2014
@@ -34,10 +34,10 @@
 */
 
 
-#ifndef CONTACTPOINTESTIMATION_H_
-#define CONTACTPOINTESTIMATION_H_
+#ifndef SURFACENORMALESTIMATOR_H_
+#define SURFACENORMALESTIMATOR_H_
 
-#include <contact_point_estimation/ContactPointEstimationParams.h>
+#include <contact_point_estimation/SurfaceNormalEstimatorParams.h>
 #include <eigen3/Eigen/Core>
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/Vector3.h>
@@ -49,55 +49,32 @@ using namespace Eigen;
 using namespace geometry_msgs;
 using namespace std_msgs;
 
-class ContactPointEstimation
+class SurfaceNormalEstimator
 {
 public:
-	ContactPointEstimation(ContactPointEstimationParams *params);
-	virtual ~ContactPointEstimation();
-
-	// updates the estimate of the contact point, which will be expressed in 
-	// the reference frame of the force-torque measurements
-	//
-	// ft_compensated are gravity-compensated force-torque measurements
-	virtual void updateContactPointEstimate(const WrenchStamped &ft_compensated);
+	SurfaceNormalEstimator(SurfaceNormalEstimatorParams *params);
+	virtual ~SurfaceNormalEstimator();
 
 
 	// updates the estimate of the surface normal expressed in the base frame
 	// twist_ft_sensor is the twist of the FT sensor frame expressed in the base frame
-	virtual void updateSurfaceNormalEstimate(const TwistStamped &twist_ft_sensor);
+	virtual void update(const TwistStamped &twist_ft_sensor);
 
 	// resets the estimator
 	virtual void reset();
 
-
-	virtual PointStamped getContactPointEstimate() const;
-
-	virtual Vector3Stamped getSurfaceNormalEstimate() const;
+	virtual Vector3Stamped getEstimate() const;
 
 protected:
 
-	ContactPointEstimationParams *m_params;
-
-	// expressed relative to FT sensor frame
-	Vector3d m_contact_point_estimate;
-	Vector3d m_r_dot;
-	Matrix3d m_Lr;
-	Vector3d m_cr;
-
+	SurfaceNormalEstimatorParams *m_params;
 
 	// expressed with respect to the base frame
 	Vector3d m_surface_normal_estimate;
 	Matrix3d m_Ln;
 
 	// measurements
-	WrenchStamped m_ft_compensated;
 	TwistStamped m_twist_ft_sensor;
-
-
-	// contact point estimate + Lr + cr expressed in FT sensor frame
-	void updateLr(const Vector3d &force);
-
-	void updatecr(const Vector3d &force, const Vector3d &torque);
 
 	// velocity of ft sensor frame expressed in frame of FT sensor twist
 	virtual void updateLn(const Vector3d &v_ft);
@@ -105,9 +82,6 @@ protected:
 private:
 
 
-
-
-
 };
 
-#endif /* CONTACTPOINTESTIMATION_H_ */
+#endif /* SURFACENORMALESTIMATOR_H_ */

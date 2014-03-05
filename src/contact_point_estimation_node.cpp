@@ -34,8 +34,10 @@
 */
 
 #include <ros/ros.h>
-#include <contact_point_estimation/ContactPointEstimation.h>
-#include <contact_point_estimation/ContactPointEstimationParams.h>
+#include <contact_point_estimation/ContactPointEstimator.h>
+#include <contact_point_estimation/ContactPointEstimatorParams.h>
+#include <contact_point_estimation/SurfaceNormalEstimator.h>
+#include <contact_point_estimation/SurfaceNormalEstimatorParams.h>
 
 #include <geometry_msgs/WrenchStamped.h>
 #include <geometry_msgs/TwistStamped.h>
@@ -66,8 +68,11 @@ public:
     ros::ServiceServer srvServer_Stop_;
 
 	ros::Time last_publish_time;
-	ContactPointEstimationParams *cpe_params;
-	ContactPointEstimation *cpe;
+	ContactPointEstimatorParams *cpe_params;
+	ContactPointEstimator *cpe;
+
+	SurfaceNormalEstimatorParams *sne_params;
+	SurfaceNormalEstimator *sne;
 
 
 	ContactPointEstimationNode()
@@ -75,6 +80,12 @@ public:
 		n_ = ros::NodeHandle("~");
         m_received_ft = false;
         m_run_estimator = false;
+
+        cpe_params = NULL;
+        cpe = NULL;
+
+        sne_params = NULL;
+        sne = NULL;
 
 		topicPub_ContactPointEstimate_ = n_.advertise<geometry_msgs::PointStamped>("contact_point_estimate", 1);
 		topicPub_SurfaceNormalEstimate_ = n_.advertise<geometry_msgs::Vector3Stamped>("surface_normal_estimate", 1);
@@ -92,6 +103,8 @@ public:
 	{
 		delete cpe_params;
 		delete cpe;
+		delete sne_params;
+		delete sne;
 	}
 
     bool getEstimatorParameters()
@@ -247,19 +260,20 @@ public:
         }
 
 		bool ret = true;
-        cpe_params = new ContactPointEstimationParams();
+        cpe_params = new ContactPointEstimatorParams();
+        sne_params = new SurfaceNormalEstimatorParams();
 
         cpe_params->setGammaR(gamma_r);
         cpe_params->setKappaR(kappa_r);
         cpe_params->setBetaR(beta_r);
         cpe_params->setInitialR(initial_r);
 
-        cpe_params->setGammaN(gamma_n);
-        cpe_params->setBetaN(beta_n);
-        cpe_params->setInitialN(initial_n);
+        sne_params->setGammaN(gamma_n);
+        sne_params->setBetaN(beta_n);
+        sne_params->setInitialN(initial_n);
 
-        cpe_params->setContactPointEstimatorUpdateFrequency(cpe_update_frequency);
-        cpe_params->setSurfaceNormalEstimatorUpdateFrequency(sne_update_frequency);
+        cpe_params->setUpdateFrequency(cpe_update_frequency);
+        sne_params->setUpdateFrequency(sne_update_frequency);
 
 		return ret;
 
@@ -281,6 +295,7 @@ public:
 	{
         m_run_estimator = true;
         cpe->reset();
+        sne->reset();
 		return true;
 	}
 
@@ -290,6 +305,7 @@ public:
         m_received_ft = false;
         m_received_twist = false;
         cpe->reset();
+        sne->reset();
         return true;
     }
 
@@ -301,51 +317,69 @@ public:
 
     void contact_point_estimate_threadfunc()
     {
-        if(!m_run_estimator)
-        {
-            ros::Duration(1/(cpe_params->getContactPointEstimatorUpdateFrequency())).sleep();
-            return;
-        }
+    	for(;;)
+    	{
+    		if(!m_run_estimator)
+    		{
+    			ros::Duration(1/(cpe_params->getUpdateFrequency())).sleep();
+    		}
 
-        if(!m_received_ft)
-        {
-        	static ros::Time t = ros::Time::now();
-        	if((ros::Time::now()-t).toSec()>1.0)
-        	{
-        		ROS_ERROR("Haven't received FT sensor measurements");
-        		t = ros::Time::now();
-        	}
+    		else if(!m_received_ft)
+    		{
+    			static ros::Time t = ros::Time::now();
+    			if((ros::Time::now()-t).toSec()>1.0)
+    			{
+    				ROS_ERROR("Haven't received FT sensor measurements");
+    				t = ros::Time::now();
+    			}
 
-        	return;
-        }
+    		}
 
-        cpe->updateContactPointEstimate(m_ft_compensated);
-        topicPub_ContactPointEstimate_.publish(cpe->getContactPointEstimate());
-        ros::Duration(1/(cpe_params->getContactPointEstimatorUpdateFrequency())).sleep();
+    		else if(!n_.ok())
+    		{
+    			return;
+    		}
+
+    		else
+    		{
+    			cpe->update(m_ft_compensated);
+    			topicPub_ContactPointEstimate_.publish(cpe->getEstimate());
+    			ros::Duration(1/(cpe_params->getUpdateFrequency())).sleep();
+    		}
+    	}
     }
 
     void surface_normal_estimate_threadfunc()
     {
-        if(!m_run_estimator)
-        {
-            ros::Duration(1/(cpe_params->getSurfaceNormalEstimatorUpdateFrequency())).sleep();
-            return;
-        }
+    	for(;;)
+    	{
+    		if(!m_run_estimator)
+    		{
+    			ros::Duration(1/(sne_params->getUpdateFrequency())).sleep();
+    		}
 
-        if(!m_received_twist)
-        {
-        	static ros::Time t = ros::Time::now();
-        	if((ros::Time::now()-t).toSec()>1.0)
-        	{
-        		ROS_ERROR("Haven't received FT sensor twist");
-        		t = ros::Time::now();
-        	}
-        	return;
-        }
+    		else if(!m_received_twist)
+    		{
+    			static ros::Time t = ros::Time::now();
+    			if((ros::Time::now()-t).toSec()>1.0)
+    			{
+    				ROS_ERROR("Haven't received FT sensor twist");
+    				t = ros::Time::now();
+    			}
+    		}
 
-        cpe->updateSurfaceNormalEstimate(m_twist_ft_sensor);
-        topicPub_SurfaceNormalEstimate_.publish(cpe->getSurfaceNormalEstimate());
-        ros::Duration(1/(cpe_params->getSurfaceNormalEstimatorUpdateFrequency())).sleep();
+    		else if(!n_.ok())
+    		{
+    			return;
+    		}
+
+    		else
+    		{
+    			sne->update(m_twist_ft_sensor);
+    			topicPub_SurfaceNormalEstimate_.publish(sne->getEstimate());
+    			ros::Duration(1/(sne_params->getUpdateFrequency())).sleep();
+    		}
+    	}
     }
 
 
@@ -376,9 +410,10 @@ int main(int argc, char **argv)
 	}
 
 
-	cpe_node.cpe = new ContactPointEstimation(cpe_node.cpe_params);
+	cpe_node.cpe = new ContactPointEstimator(cpe_node.cpe_params);
+	cpe_node.sne = new SurfaceNormalEstimator(cpe_node.sne_params);
 
-    ros::AsyncSpinner s(2);
+    ros::AsyncSpinner s(4);
     s.start();
 
     boost::thread contact_point_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::contact_point_estimate_threadfunc, &cpe_node));
@@ -386,8 +421,6 @@ int main(int argc, char **argv)
 
     contact_point_estimate_thread.join();
     surface_normal_estimate_thread.join();
-
-    ros::waitForShutdown();
 
 	return 0;
 }
