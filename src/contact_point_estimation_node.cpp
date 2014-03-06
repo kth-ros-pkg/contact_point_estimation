@@ -281,31 +281,42 @@ public:
 
 	void topicCallback_FT_compensated(const geometry_msgs::WrenchStampedPtr &msg)
 	{
+		m_ft_mutex.lock();
 		m_ft_compensated = *msg;
+		m_ft_mutex.unlock();
+
 		m_received_ft = true;
 	}
 
     void topicCallback_Twist_FT_Sensor(const geometry_msgs::TwistStampedPtr &msg)
     {
-        m_twist_ft_sensor = *msg;
+    	m_twist_mutex.lock();
+    	m_twist_ft_sensor = *msg;
+    	m_twist_mutex.unlock();
+
         m_received_twist = true;
     }
 
     bool srvCallback_Start(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 	{
-        m_run_estimator = true;
-        cpe->reset();
-        sne->reset();
+    	cpe->reset();
+    	sne->reset();
+
+    	getEstimatorParameters();
+    	m_run_estimator = true;
+    	m_cpe_thread = boost::thread(boost::bind(&ContactPointEstimationNode::cpe_threadfunc, this));
+    	m_sne_thread = boost::thread(boost::bind(&ContactPointEstimationNode::sne_threadfunc, this));
+
 		return true;
 	}
 
     bool srvCallback_Stop(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
     {
         m_run_estimator = false;
+
         m_received_ft = false;
         m_received_twist = false;
-        cpe->reset();
-        sne->reset();
+
         return true;
     }
 
@@ -315,13 +326,14 @@ public:
         return m_run_estimator;
 	}
 
-    void contact_point_estimate_threadfunc()
+    void cpe_threadfunc()
     {
+    	static ros::Rate loop_rate(cpe_params->getUpdateFrequency());
     	for(;;)
     	{
     		if(!m_run_estimator)
     		{
-    			ros::Duration(1/(cpe_params->getUpdateFrequency())).sleep();
+    			return;
     		}
 
     		else if(!m_received_ft)
@@ -342,20 +354,24 @@ public:
 
     		else
     		{
+    			m_ft_mutex.lock();
     			cpe->update(m_ft_compensated);
+    			m_ft_mutex.unlock();
+
     			topicPub_ContactPointEstimate_.publish(cpe->getEstimate());
-    			ros::Duration(1/(cpe_params->getUpdateFrequency())).sleep();
+    			loop_rate.sleep();
     		}
     	}
     }
 
-    void surface_normal_estimate_threadfunc()
+    void sne_threadfunc()
     {
+    	static ros::Rate loop_rate(sne_params->getUpdateFrequency());
     	for(;;)
     	{
     		if(!m_run_estimator)
     		{
-    			ros::Duration(1/(sne_params->getUpdateFrequency())).sleep();
+    			return;
     		}
 
     		else if(!m_received_twist)
@@ -375,9 +391,12 @@ public:
 
     		else
     		{
+    			m_twist_mutex.lock();
     			sne->update(m_twist_ft_sensor);
+    			m_twist_mutex.unlock();
+
     			topicPub_SurfaceNormalEstimate_.publish(sne->getEstimate());
-    			ros::Duration(1/(sne_params->getUpdateFrequency())).sleep();
+    			loop_rate.sleep();
     		}
     	}
     }
@@ -389,6 +408,12 @@ private:
 
     geometry_msgs::WrenchStamped m_ft_compensated;
     geometry_msgs::TwistStamped m_twist_ft_sensor;
+
+    boost::mutex m_ft_mutex;
+    boost::mutex m_twist_mutex;
+
+    boost::thread m_cpe_thread;
+    boost::thread m_sne_thread;
 
 	bool m_received_ft;
     bool m_received_twist;
@@ -416,11 +441,7 @@ int main(int argc, char **argv)
     ros::AsyncSpinner s(4);
     s.start();
 
-    boost::thread contact_point_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::contact_point_estimate_threadfunc, &cpe_node));
-    boost::thread surface_normal_estimate_thread = boost::thread(boost::bind(&ContactPointEstimationNode::surface_normal_estimate_threadfunc, &cpe_node));
-
-    contact_point_estimate_thread.join();
-    surface_normal_estimate_thread.join();
+    ros::waitForShutdown();
 
 	return 0;
 }
