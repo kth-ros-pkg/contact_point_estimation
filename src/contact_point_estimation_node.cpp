@@ -299,6 +299,7 @@ public:
 
     bool srvCallback_Start(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
 	{
+    	ROS_INFO("Starting cpe + sne node");
     	cpe->reset();
     	sne->reset();
 
@@ -312,6 +313,8 @@ public:
 
     bool srvCallback_Stop(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
     {
+    	ROS_INFO("Stopping cpe + sne node");
+
         m_run_estimator = false;
 
         m_received_ft = false;
