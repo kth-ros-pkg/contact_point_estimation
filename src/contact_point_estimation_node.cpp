@@ -305,8 +305,8 @@ public:
 
     	getEstimatorParameters();
     	m_run_estimator = true;
-    	m_cpe_thread = boost::thread(boost::bind(&ContactPointEstimationNode::cpe_threadfunc, this));
-    	m_sne_thread = boost::thread(boost::bind(&ContactPointEstimationNode::sne_threadfunc, this));
+    	m_cpe_thread = boost::thread(boost::bind(&ContactPointEstimationNode::CPEThreadFunction, this));
+    	m_sne_thread = boost::thread(boost::bind(&ContactPointEstimationNode::SNEThreadFunction, this));
 
 		return true;
 	}
@@ -329,7 +329,7 @@ public:
         return m_run_estimator;
 	}
 
-    void cpe_threadfunc()
+    void CPEThreadFunction()
     {
     	static ros::Rate loop_rate(cpe_params->getUpdateFrequency());
     	for(;;)
@@ -367,7 +367,7 @@ public:
     	}
     }
 
-    void sne_threadfunc()
+    void SNEThreadFunction()
     {
     	static ros::Rate loop_rate(sne_params->getUpdateFrequency());
     	for(;;)

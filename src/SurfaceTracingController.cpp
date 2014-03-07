@@ -70,6 +70,11 @@ void SurfaceTracingController::setControlFrequency(double control_freq)
 	m_control_freq = control_freq;
 }
 
+double SurfaceTracingController::getControlFrequency()
+{
+	return m_control_freq;
+}
+
 void SurfaceTracingController::reset()
 {
 	m_f_n_error_integral = 0.0;

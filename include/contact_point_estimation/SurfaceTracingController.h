@@ -53,6 +53,9 @@ public:
 	void setDesiredNormalForce(double f_d);
 	void setControlFrequency(double control_freq);
 
+	// get controller parameters
+	double getControlFrequency();
+
 	// resets the controller (integrators)
 	void reset();
 
