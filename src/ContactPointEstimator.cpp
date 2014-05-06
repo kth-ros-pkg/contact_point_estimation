@@ -73,7 +73,7 @@ void ContactPointEstimator::update(const WrenchStamped &ft_compensated)
 	updatecr(force, torque);
 
 	// running average to filter out noise in the update of contact point estimate
-	m_r_dot = (1/20.0)*(19.0*m_r_dot - 1.0*gamma_r*(m_Lr*m_contact_point_estimate + m_cr));
+	m_r_dot = -gamma_r*(m_Lr*m_contact_point_estimate + m_cr);
 
 	m_contact_point_estimate = m_contact_point_estimate
 			+ m_r_dot *(1/cpe_update_frequency)

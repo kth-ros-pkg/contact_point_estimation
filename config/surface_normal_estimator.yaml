@@ -1,9 +1,9 @@
 # gains of surface normal estimator
-gamma_n: 250000.0
-beta_n: 150.0
+gamma_n: 0.0 #250000.0
+beta_n: 0.0 #150.0
 
 # initial surface normal (in base frame)
-initial_n: [0.35, 0.35, 0.866]
+initial_n: [0.0084, -0.0577, 0.9983] #[0.35, 0.35, 0.866]
 
 # update frequency of surface normal estimator [Hz]
-sne_update_frequency: 140.0
+sne_update_frequency: 150.0
